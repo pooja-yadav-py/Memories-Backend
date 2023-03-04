@@ -2,12 +2,10 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
 const User = require('../models/userModel')
-const JWT_SECRFT = process.env.ACCESS_TOKEN_SECRET
-const sgMail = require("@sendgrid/mail");
-const nodemailer = require("nodemailer");
-sgMail.setApiKey("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");
-
+const Memory = require('../models/memoryModel');
+const JWT_SECRFT = process.env.ACCESS_TOKEN_SECRET;
 
 //signup route
 router.post('/resister', async (req, res) => {
@@ -25,7 +23,7 @@ router.post('/resister', async (req, res) => {
             gender,
         })
         res.send({ success: true, message: "you are Resistor successfully" })
-    } catch (error) {        
+    } catch (error) {
         res.send({ success: false, message: "some issue please try again" })
     }
 })
@@ -33,8 +31,8 @@ router.post('/resister', async (req, res) => {
 //login route
 router.post("/loginuser", async (req, res) => {
     const { email, password } = req.body;
-    
-    const user = await User.findOne({ email });    
+
+    const user = await User.findOne({ email });
     if (!user) {
         return res.send({ success: false, message: "User not Exist" })
     }
@@ -61,13 +59,13 @@ router.get("/userData", async (req, res) => {
             }
             return res;
         });
-        
+
         if (user == "token Expired") {
             return res.send({ status: "error", data: "Token Expired" });
         }
         const useremail = user.email;
         User.findOne({ email: useremail })
-            .then((data) => {                
+            .then((data) => {
                 res.send({ status: "ok", data: data });
             }).catch((error) => {
                 res.send({ status: "error", data: error });
@@ -99,7 +97,7 @@ router.post("/forgetpassword", async (req, res) => {
                 html: `<a href="http://localhost:3000/resetpassword/${oldUser._id}">Confirm</a>`
             };
 
-            mailTransporter.sendMail(mailDetails, function (err, data) {                
+            mailTransporter.sendMail(mailDetails, function (err, data) {
                 if (err) {
                     console.log('Error Occurs');
                 } else {
@@ -132,6 +130,116 @@ router.post("/resetpassword", async (req, res) => {
         }
     } catch (error) {
         return res.send({ success: false, message: "User not Exist" });
+    }
+})
+
+//get all user
+router.get("/userslist", async (req, res) => {
+    const authorizationHeader = req.headers["authorization"];
+    const token = authorizationHeader.split(" ")[1];
+
+    try {
+        const user = jwt.verify(token, JWT_SECRFT, (err, res) => {
+            if (err) {
+                return "token Expired";
+            }
+            return res;
+        });
+        if (user == "token Expired") {
+            return res.send({ status: "error", data: "Token Expired" });
+        }
+        let users = await User.find({})
+        if (!user) {
+            return res.send({ success: false, message: "No any user" });
+        }
+        else {
+            return res.send({ success: true, data: users })
+        }
+    } catch (error) {
+        return res.send({ success: false, message: "No any user" });
+    }
+})
+
+//delete user
+router.delete("/deleteuser/:id", async (req, res) => {
+    const _id = req.params.id;
+    const authorizationHeader = req.headers["authorization"];
+    const token = authorizationHeader.split(" ")[1];
+
+    try {
+        const user = jwt.verify(token, JWT_SECRFT, (err, res) => {
+            if (err) {
+                return "token Expired";
+            }
+            return res;
+        });
+        if (user == "token Expired") {
+            return res.send({ status: false, message: "Token Expired" });
+        }
+        await User.remove({ _id: _id });
+        return res.send({ status: true, message: "Item deleted" });
+    } catch (error) {
+        console.log(error);
+    }
+})
+
+//update user
+router.put("/updateuser", async (req, res) => {
+    const _id = req.body._id;
+    const update = { uname: req.body.uname, email: req.body.email, gender: req.body.gender }
+    const authorizationHeader = req.headers["authorization"];
+    const token = authorizationHeader.split(" ")[1];
+    try {
+        const user = jwt.verify(token, JWT_SECRFT, (err, res) => {
+            if (err) {
+                return "token Expired";
+            }
+            return res;
+        });
+        if (user == "token Expired") {
+            return res.send({ status: false, message: "Token Expired" });
+        }
+        await User.findOneAndUpdate({ _id: _id }, update);
+        return res.send({ status: true, message: "data update successfully" });
+    } catch (error) {
+        console.log(error);
+    }
+})
+
+
+//storage
+const Storage = multer.diskStorage({
+    destination: 'images',
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    }
+})
+const upload = multer({
+    storage: Storage
+}).single("selectedFile")
+
+//create Memory
+router.post("/creatememory", (req, res) => {
+    try {
+        upload(req, res, async (err) => {
+            const { creator, title, message } = req.body;
+            if (err) {
+                console.log(err);
+            }
+            else {
+                const newImage = new Memory({
+                    creator: creator,
+                    title: title,
+                    message: message,
+                    selectedFile: req.file.filename
+                })
+                await newImage.save()
+            }
+        })
+        res.send({ success: true, message: "you are Resistor successfully" })
+    } catch (error) {
+        console.log(error);
+        res.send({ success: false, message: "some issue please try again" })
     }
 })
 
