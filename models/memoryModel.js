@@ -1,12 +1,19 @@
 const mongoose= require('mongoose');
+const User = require('./userModel');
 
 
 const MemoryDetailsSchema = new mongoose.Schema(
     {
-        creator:String,
+        creator:{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: User,
+            required: true,
+        },
         title:String,
         message:String,                
         selectedFile:String,
+        name:String,
+        
         // {
         //     data:Buffer,
         //     contentType:String

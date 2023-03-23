@@ -7,19 +7,15 @@ var bodyParser = require('body-parser');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json()); // to parse JSON-encoded request bodies
-
+app.use("/images", express.static('images'));
 
 require('dotenv').config();
 
 require('./db/connection');
- 
-// const dotenv = require('dotenv')
-// dotenv.config({path:'./.env'});
-
 
 //we link the router files
-app.use(require('./router/auth'));
-
+app.use(require('./router/userAuth'));
+app.use(require('./router/memoryAuth'));
 
 
 const server = app.listen(5000,()=>{
