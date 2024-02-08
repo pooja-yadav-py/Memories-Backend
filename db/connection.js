@@ -7,4 +7,4 @@ mongoose.connect(URI,{
     useUnifiedTopology: true
 })
 .then(()=>{console.log("Connected to database")})
-.catch(e=>console.log(e)) 
+.catch(e=>console.log("=================",e)) 

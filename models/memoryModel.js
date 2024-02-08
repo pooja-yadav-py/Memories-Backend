@@ -1,32 +1,33 @@
-const mongoose= require('mongoose');
-const User = require('./userModel');
+const mongoose = require('mongoose');
+const Like = require('./likesModel');
 
 
 const MemoryDetailsSchema = new mongoose.Schema(
     {
-        creator:{
+        creator: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: User,
+            ref: 'Userinfo',
             required: true,
         },
-        title:String,
-        message:String,                
-        selectedFile:String,
-        name:String,
-        
-        // {
-        //     data:Buffer,
-        //     contentType:String
-        // },
-        // likeCount:{
-        //     type:Number,
-        //     default:0
-        // },
-              
+        title: {
+            type: String,
+            required: true,
+        },
+        message: {
+            type: String,
+            required: true,
+        },
+        selectedFile: String,
+        name: String,
+        tags: String,
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
     },{
-        collection:"Memoryinfo",
-    }
+    collection: "Memoryinfo",
+}
 );
 
-const Memory = mongoose.model("Memoryinfo",MemoryDetailsSchema);
+const Memory = mongoose.model("Memoryinfo", MemoryDetailsSchema);
 module.exports = Memory;

@@ -26,9 +26,8 @@ const userResistor = async (req, res) => {
 }
 const userLogin = async (req, res) => {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
-   
-    console.log(user)
+    const user = await User.findOne({ email });  
+    
     if (!user) {
         return res.send({ success: false, message: "User not Exist" })
     }
