@@ -1,7 +1,8 @@
-const { ObjectId } = require('mongodb');
 const Memory = require('../models/memoryModel');
-
+const Like = require('../models/likesModel');
 const jwt = require("jsonwebtoken");
+const { find } = require('../models/userModel');
+
 const LikeMemory = async (req,res)=>{
     console.log("111111111=================@@@@@@@@@@@@@@@");
     let token = req.token;
@@ -51,5 +52,16 @@ const getTotalLikesForMemory = async(req,res) =>{
 
 }
 
+const memoryLikeUser = async (req,res)=>{
+    const id = req.body.memory_id;
+    console.log("=====",id);
+    try{
+        const response = await Like.find({memoryId:id}).populate('userId').exec();
+        console.log("==",response);
+        res.send({ success: true, message: "Ok", data:response});
+    }catch(error){
+        console.log(error);
+    }
+}
 
-module.exports = {LikeMemory,getTotalLikesForMemory};
+module.exports = {LikeMemory,getTotalLikesForMemory,memoryLikeUser};

@@ -1,10 +1,9 @@
 const mongoose = require('mongoose');
-
 const likeMemory = new mongoose.Schema(
     {
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Userinfo', required: true },
         createdAt: { type: Date, default: Date.now },
-        memoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Memory', required: true },
+        memoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Memoryinfo', required: true },
 
     },{
         collection: "Likeinfo",
