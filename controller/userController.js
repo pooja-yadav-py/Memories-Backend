@@ -24,24 +24,35 @@ const userResistor = async (req, res) => {
         res.send({ success: false, message: "some issue please try again" })
     }
 }
-const userLogin = async (req, res) => {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });  
-    
-    if (!user) {
-        return res.send({ success: false, message: "User not Exist" })
-    }
-    if (await bcrypt.compare(password, user.password)) {
-        const token = jwt.sign({ email: user.email, _id: user._id }, JWT_SECRFT, { expiresIn: 100000, })
 
+// Function to handle user login
+const userLogin = async (req, res) => {
+    // Extract email and password from request body
+    const { email, password } = req.body;
+    // Find user by email
+    const user = await User.findOne({ email });  
+    // If user does not exist, return 404 status with error message
+    if (!user) {
+        return res.status(200).send({ success: false, message: "User not Exist" });
+    }
+    
+    // Compare password with hashed password stored in the database
+    if (await bcrypt.compare(password, user.password)) {
+        // Generate JWT token
+        const token = jwt.sign({ email: user.email, _id: user._id }, JWT_SECRFT, { expiresIn: 10000, })
+
+        // If token is generated successfully, return 200 status with token, isAdmin flag, and username
         if (token) {
-            return res.send({ success: true, data: token, isAdmin: user.isAdmin, uname: user.uname });
+            return res.status(200).send({ success: true, data: token, isAdmin: user.isAdmin, uname: user.uname });
         } else {
-            return res.send({ success: false, message: "Error while login" })
+        // If error occurred while generating token, return 500 status with error message
+            return res.status(500).send({ success: false, message: "Error while login" });
         }
     }
-    res.json({ success: false, message: "Invalid Password" });
+    // If password is incorrect, return 401 status with error message
+    return res.status(201).json({ success: false, message: "Invalid Password" });
 }
+
 
 // const getUserData = async (req, res) => {
 //     const authorizationHeader = req.headers["authorization"];

@@ -2,8 +2,10 @@ const jwt = require("jsonwebtoken");
 const JWT_SECRFT = process.env.ACCESS_TOKEN_SECRET;
 
 function tokenVerifty(req, res, next) {   
-    console.log("autofile=======================================",req.headers["authorization"])
     const authorizationHeader = req.headers["authorization"];
+    if (!authorizationHeader) {
+        return res.status(401).send({ status: "error", data: "Unauthorized" });
+    }
     const token = authorizationHeader.split(" ")[1];
     const user = jwt.verify(token, JWT_SECRFT, (err, res) => {
         if (err) {
@@ -11,12 +13,10 @@ function tokenVerifty(req, res, next) {
         }
         return res;
     });
-    console.log("@@@@@@@@@@@@@@@===================----------------------")
-    if (user == "token Expired") {        
-        return res.send({ status: "error", data: "Token Expired" });
+    if (user === "token Expired") {        
+        return res.status(401).send({ status: "error", data: "Token Expired" });
     } else {
         req.token = token;
-        console.log("===================----------------------")
         next();
     }
 }

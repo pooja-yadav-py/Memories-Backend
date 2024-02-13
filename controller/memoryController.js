@@ -18,18 +18,24 @@ const upload = multer({
     storage: Storage
 }).single("selectedFile")
 
-
+// Create a new memory
 const createMemory = async (req, res) => {
+    // Extract token and decode it to get user information
     let token = req.token
-    // const filename = req.params.filename;
     const decode = jwt.decode(token)
     try {
+        // Handle file upload
         upload(req, res, async (err) => {
+            // Extract memory data from request body
             const { title, message, name, tags } = req.body;
+            // Check for file upload error
             if (err) {
                 console.log(err);
+                // If there's an error uploading file, return 400 status with error message
+                return res.status(400).send({ success: false, message: "Error uploading file" });
             }
             else {
+                // Create a new memory object
                 const newImage = new Memory({
                     creator: decode._id,
                     title: title,
@@ -37,82 +43,113 @@ const createMemory = async (req, res) => {
                     selectedFile: req.file.filename,
                     name: name,
                     tags: tags
-                })
+                });
+                // Save the new memory to the database
                 let newMemory = await newImage.save()
-                res.send({ success: true, message: "your memory created successfully",data:newMemory})
-
+                // Return 201 status with success message and new memory data
+                return res.status(201).send({ success: true, message: "Your memory created successfully", data: newMemory });
             }
         })
     } catch (error) {
         console.log(error);
-        res.send({ success: false, message: "some issue please try again" })
+        // If there's a server error, return 500 status with error message
+        return res.status(500).send({ success: false, message: "Some issue, please try again" });
     }
 }
 
+// Function to get memories of the logged-in user
 const getUserMemory = async (req, res) => {
+    // Extract token and decode it to get user information
     let token = req.token;
     const decode = jwt.decode(token)
     try {
-        let memoriesResonse = await Memory.find({ "creator": decode._id }).sort({ createdAt: -1 }).populate('creator').exec();
-        if (!memoriesResonse) {
-            return res.send({ success: false, message: "No any memory" });
+        // Find memories created by the user and sort by createdAt in descending order
+        let memoriesResponse = await Memory.find({ "creator": decode._id }).sort({ createdAt: -1 }).populate('creator').exec();
+        
+        // If no memories found, return 404 status with error message
+        if (!memoriesResponse || memoriesResponse.length === 0) {
+            return res.status(404).send({ success: false, message: "No memories found" });
         }
         else {
-            memoriesResonse = memoriesResonse.map(memory => {
+            // Modify memory objects to include full image URLs
+            memoriesResponse = memoriesResponse.map(memory => {
                 memory.selectedFile = req.protocol + '://' + req.get('host') + '/images/' + memory.selectedFile;
                 return memory
             })
-            return res.send({ success: true, data: memoriesResonse, message: "your memory created successfully" })
+            // Return 200 status with memories data and success message
+            return res.status(200).send({ success: true, data: memoriesResponse, message: "Your memories retrieved successfully" })
         }
     } catch (error) {
         console.log(error);
+        // If any error occurs, return 500 status
+        return res.status(500).send({ success: false, message: "Internal server error" });
     }
 }
 
+// Function to get all memories
 const getAllMemory = async (req, res) => {
-    const filename = req.params.filename;
     try {
-        let memoriesResonse = await Memory.find({}).sort({ createdAt: -1 })
-        if (!memoriesResonse) {
-            return res.send({ success: false, message: "No any memory" });
+        // Find all memories and sort by createdAt in descending order
+        let memoriesResponse = await Memory.find({}).sort({ createdAt: -1 })
+        
+        // If no memories found, return 404 status with error message
+        if (!memoriesResponse || memoriesResponse.length === 0) {
+            return res.status(404).send({ success: false, message: "No memories found" });
         }
         else {
-            memoriesResonse = memoriesResonse.map(memory => {
+            // Modify memory objects to include full image URLs
+            memoriesResponse = memoriesResponse.map(memory => {
                 memory.selectedFile = req.protocol + '://' + req.get('host') + '/images/' + memory.selectedFile;
                 return memory
             })
-            return res.send({ success: true, data: memoriesResonse })
+            // Return 200 status with memories data
+            return res.status(200).send({ success: true, data: memoriesResponse });
         }
     } catch (error) {
         console.log(error);
-        return res.send({ success: false, message: "No any memory" });
+        // If any error occurs, return 500 status with error message
+        return res.status(500).send({ success: false, message: "Internal server error" });
     }
 }
 
+// Function to delete a memory
 const deleteMemory = async (req, res) => {
+    // Extract isAdmin header and token from request
     const isAdmin = req.headers.isadmin;
     let token = req.token;
     const decode = jwt.decode(token)
     const _id = req.params.id;
     try {
+        // Find the memory to delete
         let memoryCreator = await Memory.findOne({ _id: _id });
+        
+        // Check if the user is the creator of the memory or an admin
         if (memoryCreator.creator == decode._id || isAdmin) {
+            // Delete the memory and return 200 status with success message
             await Memory.deleteOne({ _id: _id });
-            return res.send({ status: true, message: "Memory deleted" });
+            return res.status(200).send({ status: true, message: "Memory deleted" });
         } else {
-            return res.send({ status: false, message: "User not valid" });
+            // If user is not authorized, return 403 status with error message
+            return res.status(403).send({ status: false, message: "User not valid" });
         }
     } catch (error) {
         console.log(error);
+         // If any error occurs, return 500 status with error message
+         return res.status(500).send({ status: false, message: "Internal server error" });
     }
 }
 
+//Update memory
 const updateMemory = (req, res) => {
+    // Extract token and decode it to get user information
     let token = req.token;
     const decode = jwt.decode(token)
     try {
+        // Handle file upload
         upload(req, res, async (err) => {
             const { title, message, selectedFile } = req.body;
+            // Determine update object based on whether a new file is uploaded or not
+            let update;
             if (selectedFile) {
                 update = { title, message, selectedFile }
             } else {
@@ -120,20 +157,33 @@ const updateMemory = (req, res) => {
             }
             const _id = req.body._id;
             if (err) {
+                // If there's an error uploading file, return 400 status with error message
                 console.log(err);
+                return res.status(400).send({ status: false, message: "Error uploading file" });
             }
             else {
+                // Find the memory to update
                 let memoryCreator = await Memory.findOne({ _id: _id });
+                if (!memoryCreator) {
+                    // If memory is not found, return 404 status with error message
+                    return res.status(404).send({ status: false, message: "Memory not found" });
+                }
+                // Check if the user is authorized to update the memory
+
                 if (memoryCreator.creator == decode._id) {
+                    // Update memory and return 200 status with success message
                     await Memory.updateOne({ _id: _id }, update);
-                    return res.send({ status: true, message: "data update successfully" });
+                    return res.status(200).send({ status: true, message: "Data updated successfully" });
                 } else {
-                    return res.send({ status: false, message: "User not valid" });
+                    // If user is not authorized, return 403 status with error message
+                    return res.status(403).send({ status: false, message: "User not valid" });
                 }
             }
         })
     } catch (err) {
         console.log(err);
+        // If there's a server error, return 500 status with error message
+        return res.status(500).send({ status: false, message: "Internal server error" });
     }
 }
 
@@ -145,21 +195,19 @@ const likeMemory = async (req, res) => {
     try {
         let undoLike = await MemoryLikes.find({ userId: userId, memoryId: memoryId })
         console.log("add",memoryId)
-        // console.log("unlike",undoLike[0].memoryId);
         if (undoLike.length > 0) {
             // Delete the document
             const deleteResult = await MemoryLikes.deleteOne(undoLike[0]._id);
             console.log("deleteResult",deleteResult)
-            res.send({ success: true, message: "Memory DisLike",data:memoryId })
-             
+            res.send({ success: true, message: "Memory DisLike",data:memoryId })    
         } else {
-            await MemoryLikes.create({
+            const response = await MemoryLikes.create({
                 userId: decode._id,
                 memoryId: req.body.memory_id
             })
-            res.send({ success: true, message: "Memory Like",data:memoryId })
+            console.log("==response",response)
+            res.send({ success: true, message: "Memory Like",data:response })
         }
-
     } catch (err) {
         console.log(err);
         res.send({ success: false, message: "some issue please try again" })
