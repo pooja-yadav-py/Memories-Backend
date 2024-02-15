@@ -7,21 +7,29 @@ const EmailSent = require('./emailSent');
 
 const userResistor = async (req, res) => {
     const { username, email, password, gender } = req.body
-    const encryptedPassword = await bcrypt.hash(password, 10)
+    
+    // Encrypt the password
+    const hashedPassword = await bcrypt.hash(password, 10)
     try {
-        const oldUser = await User.findOne({ email });
-        if (oldUser) {
-            return res.send({ success: "false", message: "User Already Exists" });
+        // Check if the user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            // If user already exists, return 409 Conflict status
+            return res.status(409).send({ success: false, message: "User Already Exists" });
         }
+        
+        // Create a new user
         await User.create({
             uname: username,
             email,
-            password: encryptedPassword,
+            password: hashedPassword,
             gender,
         })
-        res.send({ success: true, message: "you are Resistor successfully" })
+        // Send success response with 200 OK status
+        res.status(200).send({ success: true, message: "You are registered successfully" });
     } catch (error) {
-        res.send({ success: false, message: "some issue please try again" })
+        // If an error occurs during registration, return 500 Internal Server Error status
+        res.status(500).send({ success: false, message: "Some issue occurred, please try again" });
     }
 }
 
@@ -119,11 +127,11 @@ const updateUser = async (req, res) => {
 const forgetPassword = async (req, res) => {
     const { email } = req.body;    
     try {
-        const oldUser = await User.findOne({ email });        
-        if (!oldUser) {
+        const existingUser = await User.findOne({ email });        
+        if (!existingUser) {
             return res.send("User Not Exists!!")
         } else {            
-            EmailSent(oldUser._id);           
+            EmailSent(existingUser._id);           
             return res.send({ success: true, message: 'Password reset email has been sent,please check your mail' })
         }
     } catch (error) {
@@ -138,8 +146,8 @@ const resetPassword = async (req, res) => {
         if (!finduser) {
             return res.send({ success: false, message: "User not Exist" });
         }
-        const encryptedPassword = await bcrypt.hash(password, 10)
-        let updateuser = await User.updateOne({ _id: id }, { password: encryptedPassword });
+        const hashedPassword = await bcrypt.hash(password, 10)
+        let updateuser = await User.updateOne({ _id: id }, { password: hashedPassword });
         if (updateuser.modifiedCount == 1) {
             return res.send({ success: true, message: "your Password Updated!" });
         }
