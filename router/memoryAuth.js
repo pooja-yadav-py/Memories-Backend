@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const tokenVerifty = require('./authorization');
 
-const {createMemory,getUserMemory,getAllMemory,deleteMemory,updateMemory,likeMemory,userLikeMemory} = require('../controller/memoryController');
+const {createMemory,getUserMemory,getAllMemory,deleteMemory,updateMemory,likeMemory,userLikeMemory,filterMemory} = require('../controller/memoryController');
 
 //create Memory
 router.post("/creatememory", tokenVerifty, createMemory)
@@ -24,5 +24,6 @@ router.post("/likememory", tokenVerifty, likeMemory)
 
 //userLikeMemory
 router.get("/userlikememory", tokenVerifty, userLikeMemory)
+
 
 module.exports = router;
