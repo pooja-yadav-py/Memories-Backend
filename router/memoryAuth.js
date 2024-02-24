@@ -2,13 +2,10 @@ const express = require("express");
 const router = express.Router();
 const tokenVerifty = require('./authorization');
 
-const {createMemory,getAllMemory,deleteMemory,updateMemory,likeMemory,userLikeMemory,memoriesHistory} = require('../controller/memoryController');
+const {createMemory,getAllMemory,deleteMemory,updateMemory,likeMemory,userLikeMemory,getMemoryHistory,getLikeMemoryHistory} = require('../controller/memoryController');
 
 //create Memory
 router.post("/creatememory", tokenVerifty, createMemory)
-
-//get usermemories
-// router.get("/usermemories", tokenVerifty, getAllMemory)
 
 //get Memory
 router.get("/memories", tokenVerifty, getAllMemory)
@@ -25,8 +22,9 @@ router.post("/likememory", tokenVerifty, likeMemory)
 //userLikeMemory
 router.get("/userlikememory", tokenVerifty, userLikeMemory)
 
-//userLikeMemory
-router.get("/create-memory-chart", tokenVerifty, memoriesHistory)
+router.get("/memory/report/daywise", tokenVerifty, getMemoryHistory)
+
+router.get("/memory/likereport/daywise", tokenVerifty, getLikeMemoryHistory)
 
 
 module.exports = router;

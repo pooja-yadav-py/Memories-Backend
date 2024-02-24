@@ -1,9 +1,11 @@
 const jwt = require("jsonwebtoken");
+const mongoose = require('mongoose');
+
 const path = require("path");
 const multer = require("multer");
 
 const Memory = require("../models/memoryModel");
-const MemoryLikes = require("../models/likesModel");
+const Like = require("../models/likesModel");
 
 //storage
 const Storage = multer.diskStorage({
@@ -312,18 +314,18 @@ const likeMemory = async (req, res) => {
   const userId = decode._id;
   const memoryId = req.body.memory_id;
   try {
-    let undoLike = await MemoryLikes.find({
+    let undoLike = await Like.find({
       userId: userId,
       memoryId: memoryId,
     });
     console.log("add", memoryId);
     if (undoLike.length > 0) {
       // Delete the document
-      const deleteResult = await MemoryLikes.deleteOne(undoLike[0]._id);
+      const deleteResult = await Like.deleteOne(undoLike[0]._id);
       console.log("deleteResult", deleteResult);
       res.send({ success: true, message: "Memory DisLike", data: memoryId });
     } else {
-      const response = await MemoryLikes.create({
+      const response = await Like.create({
         userId: decode._id,
         memoryId: req.body.memory_id,
       });
@@ -341,7 +343,7 @@ const userLikeMemory = async (req, res) => {
   const decode = jwt.decode(token);
   const userId = decode._id;
   try {
-    let memoryLikeUser = await MemoryLikes.find({ userId });
+    let memoryLikeUser = await Like.find({ userId });
     res.send({ success: true, data: memoryLikeUser });
   } catch (error) {
     res.send({ success: false, data: "some issue please try again" });
@@ -349,7 +351,7 @@ const userLikeMemory = async (req, res) => {
   }
 };
 
-const memoriesHistory = async (req, res) => {
+const getMemoryHistory = async (req, res) => {
   try {
     const result = await Memory.aggregate([
       {
@@ -372,6 +374,44 @@ const memoriesHistory = async (req, res) => {
   }
 }
 
+const getLikeMemoryHistory = async (req, res) => {
+  let memoryId = req.query;
+  
+  try {
+    const result = await Like.aggregate([
+      {
+        $match: { memoryId: mongoose.Types.ObjectId(memoryId) }
+      },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: "%d/%m/%Y", date: "$createdAt" } },
+          },
+          count: { $sum: 1 }
+        }
+      }, 
+      {
+        $project: {
+          _id: 0,
+          date: "$_id.date",
+          count: 1
+        }
+      },
+      {
+        $sort: { date: 1 }
+      }
+    ]);
+    
+    console.log(result); 
+    res.status(200).send({ success: true, message: "ok",data: result });
+    
+  } catch (e) {
+    console.error(e);
+    res.status(500).send({ success: false, message: "Internal server error" });
+  }
+}
+
+
 module.exports = {
   createMemory,
   // getUserMemory,
@@ -380,5 +420,6 @@ module.exports = {
   updateMemory,
   likeMemory,
   userLikeMemory,
-  memoriesHistory,
+  getMemoryHistory,
+  getLikeMemoryHistory,
 };
