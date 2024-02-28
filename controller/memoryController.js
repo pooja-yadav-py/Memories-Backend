@@ -353,29 +353,45 @@ const userLikeMemory = async (req, res) => {
 
 const getMemoryHistory = async (req, res) => {
   try {
-    const result = await Memory.aggregate([
+    const token = req.token;
+    const report = req.query.report==='true';
+    const decode = jwt.decode(token);
+    const userId = decode._id;
+    let aggregationPipeline = [];
+    
+    
+    // Conditionally add $match stage based on isAdmin flag
+    if(report){
+      aggregationPipeline.push({$match:{creator: mongoose.Types.ObjectId(userId)}})
+    }
+    
+    // Add remaining aggregation stages
+    aggregationPipeline.push(
       {
-        $group: {
+        $group:{
           _id: { $dateToString: { format: "%d/%m/%Y", date: "$createdAt" } },
           count: { $sum: 1 }
         }
       },
       {
-        $sort: { "_id": 1 }
+        $sort:{ "_id": 1}
       }
-    ]);
+    ) 
     
-    console.log(result); 
-    res.status(200).send({ success: true, message: "ok",data: result });
+    // Execute the aggregation pipeline
+    const result = await Memory.aggregate(aggregationPipeline);
     
-  } catch (e) {
-    console.error(e);
+    console.log("=========",result); 
+    res.status(200).send({ success: true, message: "OK",data: result });
+    
+  } catch (error) {
+    console.error("Error:", error);
     res.status(500).send({ success: false, message: "Internal server error" });
   }
 }
 
 const getLikeMemoryHistory = async (req, res) => {
-  let memoryId = req.query;
+  let memoryId = req.query.id;
   
   try {
     const result = await Like.aggregate([
@@ -403,10 +419,10 @@ const getLikeMemoryHistory = async (req, res) => {
     ]);
     
     console.log(result); 
-    res.status(200).send({ success: true, message: "ok",data: result });
+    res.status(200).send({ success: true, message: "OK",data: result });
     
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error("Error:", error);
     res.status(500).send({ success: false, message: "Internal server error" });
   }
 }
