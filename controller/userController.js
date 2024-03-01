@@ -63,12 +63,24 @@ const userLogin = async (req, res) => {
 
 const getAllUser = async (req, res) => {
     try {
-        let users = await User.find({})
-        if (!users) {
+        const loginUser = req.query.loginuser==='true';
+        console.log("-ppp",typeof(loginUser));
+        let token = req.token;
+        const decode = jwt.decode(token);
+        const userId = decode._id;
+        console.log("=========",userId);
+        let userData;
+        if(loginUser){
+             userData = await User.findOne({_id:userId});
+        }else{
+             userData = await User.find({})
+        }
+        console.log("==========================",userData);
+        if (!userData) {
             return res.send({ success: false, message: "No any user" });
         }
         else {
-            return res.send({ success: true, data: users })
+            return res.send({ success: true, data: userData })
         }
     } catch (error) {
         return res.send({ success: false, message: "No any user" });
@@ -85,14 +97,46 @@ const deleteUser = async (req, res) => {
     }
 }
 
+// const updateUser = async (req, res) => {
+//     const _id = req.body._id;
+//     const update = { uname: req.body.uname, email: req.body.email, gender: req.body.gender }
+//     try {
+//         await User.findOneAndUpdate({ _id: _id }, update);
+//         return res.send({ status: true, message: "data update successfully" });
+//     } catch (error) {
+//         console.log(error);
+//     }
+// }
 const updateUser = async (req, res) => {
-    const _id = req.body._id;
-    const update = { uname: req.body.uname, email: req.body.email, gender: req.body.gender }
+    const { _id, ...update } = req.body;
+console.log(req.body)
     try {
-        await User.findOneAndUpdate({ _id: _id }, update);
-        return res.send({ status: true, message: "data update successfully" });
+        // Fetch the user from the database using the _id
+        const user = await User.findById(_id);
+
+        if (req.body.oldPassword && req.body.newPassword) {
+            // This is the case where the user wants to update the password
+            // Check if the old password matches
+            const isPasswordCorrect = await bcrypt.compare(req.body.oldPassword, user.password);
+            if (!isPasswordCorrect) {
+                return res.status(200).send({ status: false, message: "Old password is incorrect" });
+            }
+
+            // Hash the new password
+            const hashedNewPassword = await bcrypt.hash(req.body.newPassword, 10);
+
+            // Update user details including the new hashed password
+            await User.findByIdAndUpdate(_id, { ...update, password: hashedNewPassword });
+        } else {
+            // This is the case where the user updates other details excluding the password
+            // Update user details excluding the password
+            await User.findByIdAndUpdate(_id, update);
+        }
+
+        return res.status(200).send({ status: true, message: "Data updated successfully" });
     } catch (error) {
-        console.log(error);
+        console.error(error);
+        return res.status(500).send({ status: false, message: "Internal server error" });
     }
 }
 
